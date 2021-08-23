@@ -4,6 +4,25 @@
   
   
   <entry>
+    <title>Kichstart solutions</title>
+    <link href="/2021/08/24/Kichstart-solutions/"/>
+    <url>/2021/08/24/Kichstart-solutions/</url>
+    
+    <content type="html"><![CDATA[<h1 id="Kickstart-solutions"><a href="#Kickstart-solutions" class="headerlink" title="Kickstart solutions"></a>Kickstart solutions</h1><h2 id="Kickstart-Round-A-2021"><a href="#Kickstart-Round-A-2021" class="headerlink" title="Kickstart Round A 2021"></a>Kickstart Round A 2021</h2><h3 id="Problem-D-Checksum"><a href="#Problem-D-Checksum" class="headerlink" title="Problem D: Checksum"></a>Problem D: Checksum</h3><p><img src="https://codejam.googleapis.com/dashboard/get_file/AQj_6U0pPtEOwsR2HMmYIl97yT1TQumpwxdTdFC16G-akSFzGIGp63EqCokGnsUXBj-mcZ1gnEo/checksum.png"></p><p>Given a $01$ matrix with noise (represented by $-1$) and their checksum in row/column direction. You can use some cost to recover a number from noise. Calculate the minimum cost that recovers the whole matrix.</p><p>According to characteristic of xor, we can recover a number without any cost if it is the only unknown number in this row/column.    And after recovering it, maybe another number can be recovered. If we use brute-force to check this, the complexity will be very huge. </p><p>Considering a bipartite graph based on rows and columns like the graph above, a node can be erased if and only if it is a leaf. After removing all of leaves, if the graph is a tree, there will be no nodes. Otherwise, there will be some cycles. In this case, we must use some cost to break the cycles. So the problem becomes: how to remove some edges to change the graph to a tree, which is a spanning tree problem.  The tree edge is the cost that we do not need to pay. So if we can calculate the maximum spanning tree (in fact forest here) for the graph, the answer is the total cost minus tree edges cost. </p><p>Here using kruscal algorithm, we can solve this problem in $O(n^2 \log n)$. About how to calculate maximum spanning forest,  I choose to add a super node which connects to all of nodes with cost $0$. Then graph becomes connected and the edges with cost $0$ will not influence the maximum spanning forest.</p>]]></content>
+    
+    
+    
+    <tags>
+      
+      <tag>Algorithm</tag>
+      
+    </tags>
+    
+  </entry>
+  
+  
+  
+  <entry>
     <title>Hello World</title>
     <link href="/2021/08/23/hello-world/"/>
     <url>/2021/08/23/hello-world/</url>
