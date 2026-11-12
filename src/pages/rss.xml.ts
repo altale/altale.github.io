@@ -1,20 +1,4 @@
-import rss from '@astrojs/rss';
-import type { APIContext } from 'astro';
-import { SITE } from '../config';
-import { getPosts, postUrl } from '../utils/posts';
+import type { APIRoute } from 'astro';
+import { makeRss } from '../utils/rss';
 
-export async function GET(context: APIContext) {
-  const posts = await getPosts();
-  return rss({
-    title: SITE.name,
-    description: SITE.description,
-    site: context.site!,
-    items: posts.map((p) => ({
-      title: p.data.title,
-      description: p.data.description,
-      pubDate: p.data.date,
-      link: postUrl(p),
-      categories: p.data.tags,
-    })),
-  });
-}
+export const GET: APIRoute = ({ site }) => makeRss('en', site!);

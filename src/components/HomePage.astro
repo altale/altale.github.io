@@ -1,0 +1,164 @@
+---
+import Base from '../layouts/Base.astro';
+import { SITE, NOW, NOTICES, CATEGORIES, ABOUT } from '../config';
+import { UI, localize, type Lang } from '../i18n';
+import { getPosts, fmt, postUrl } from '../utils/posts';
+
+interface Props { lang: Lang }
+const { lang } = Astro.props;
+const ui = UI[lang];
+const zh = lang === 'zh';
+const L = (p: string) => localize(lang, p);
+
+const posts = await getPosts(lang);
+const latest = posts.slice(0, 6);
+const countBy = (id: string) => posts.filter((p) => p.data.category === id).length;
+const headline = SITE.headline[lang].split('\n');
+---
+<Base lang={lang}>
+  <main class="wrap">
+    <!-- hero -->
+    <section class="hero">
+      <div class="hero-main">
+        <p class="eyebrow">SECTION 00 / HELLO</p>
+        <h1 class="hero-title">
+          {headline.map((line, i) => (<>{line}{i < headline.length - 1 && <br />}</>))}<span class="accent">.</span>
+        </h1>
+        <p class="hero-intro">{SITE.intro[lang]}</p>
+        <div class="row-wrap">
+          {latest[0]
+            ? <a class="btn btn-solid" href={postUrl(latest[0])}>{ui.readLatest} <span class="mono">→</span></a>
+            : <span class="btn btn-solid" aria-disabled="true">{ui.noPostYet}</span>}
+          <a class="btn" href={L('/archive/')}>{ui.allPosts}</a>
+        </div>
+      </div>
+
+      <aside class="box now" aria-labelledby="now-h">
+        <div class="box-head">
+          <h2 id="now-h">{ui.nowTitle}</h2>
+          <span class="mono" style="font-size:12px">{NOW.updated.slice(0, 7)}</span>
+        </div>
+        <dl class="kv">
+          {NOW.items.map((it) => (<><dt>{it.label[lang]}</dt><dd>{it.value[lang]}</dd></>))}
+        </dl>
+        <div class="box-foot">
+          <span class="mono muted" style="font-size:12px">{ui.updatedOn} {NOW.updated}</span>
+          <a class="btn btn-accent" href={L('/rss.xml')}>{ui.subscribe}</a>
+        </div>
+      </aside>
+    </section>
+
+    <!-- notices -->
+    {NOTICES.length > 0 && (
+      <section class="split" aria-labelledby="notice-h">
+        <div class="split-side">
+          <p class="eyebrow">SECTION 01</p>
+          <h2 id="notice-h" class="sec-title">{ui.notice}{zh && <small>NOTICE</small>}</h2>
+        </div>
+        <div class="split-main notice-list">
+          {NOTICES.map((n) => (
+            <div class="notice">
+              <time class="mono muted" datetime={n.date}>{n.date}</time>
+              <span class="tag">{n.kind[lang]}</span>
+              <span class="notice-text">{n.text[lang]}</span>
+            </div>
+          ))}
+        </div>
+      </section>
+    )}
+
+    <!-- categories -->
+    <section class="block" aria-labelledby="cat-h">
+      <p class="eyebrow">SECTION 02</p>
+      <h2 id="cat-h" class="sec-title" style="margin-bottom:24px">{ui.categories}{zh && <small>CATEGORIES</small>}</h2>
+      <div class="cards">
+        {CATEGORIES.map((c) => (
+          <article class="box">
+            <div class="card-head mono"><span>SECTION 02 / {c.code}</span><span class="muted">{ui.postCount(countBy(c.id))}</span></div>
+            <div class="stripes" style="height:140px;border-bottom:1px solid var(--rule)" aria-hidden="true">{c.label}</div>
+            <div style="padding:16px;display:flex;flex-direction:column;gap:6px;flex:1">
+              <h3 style="margin:0;font-size:22px">{c.name[lang]}{zh && <span class="muted" style="font-size:13px;font-weight:400"> {c.label}</span>}</h3>
+              <p style="margin:0;font-size:14px;color:var(--ink-2)">{c.desc[lang]}</p>
+            </div>
+            <a class="card-entry" href={`${L('/archive/')}?category=${c.id}`}>ENTRY<span class="mono accent">→</span></a>
+          </article>
+        ))}
+      </div>
+    </section>
+
+    <!-- latest -->
+    <section class="block" aria-labelledby="latest-h" style="padding-bottom:72px">
+      <div class="row-between">
+        <div>
+          <p class="eyebrow">SECTION 03</p>
+          <h2 id="latest-h" class="sec-title">{ui.latest}{zh && <small>LATEST POSTS</small>}</h2>
+        </div>
+        <a href={L('/archive/')} style="font-weight:500;text-decoration:underline">{ui.viewAll}</a>
+      </div>
+      <div class="table-scroll">
+        <div class="ptable">
+          <div class="prow phead mono"><span>NO.</span><span>DATE</span><span>TITLE</span><span>TAGS</span><span style="text-align:right">READ</span></div>
+          {latest.length === 0 && <p class="empty">{ui.noPosts}</p>}
+          {latest.map((p) => (
+            <a class="prow" href={postUrl(p)}>
+              <span class="mono accent" style="font-size:13px">{p.no}</span>
+              <time class="mono muted" style="font-size:13px" datetime={p.data.date.toISOString()}>{fmt(p.data.date)}</time>
+              <span style="font-size:17px;font-weight:500">{p.data.title}</span>
+              <span class="muted" style="font-size:13px">{p.data.tags.map((t) => '#' + t).join(' ')}</span>
+              <span class="mono muted" style="font-size:13px;text-align:right">{p.readMin} min</span>
+            </a>
+          ))}
+        </div>
+      </div>
+    </section>
+
+    <!-- about -->
+    <section id="about" class="about" aria-labelledby="about-h">
+      <div class="avatar mono" aria-hidden="true">{ABOUT.name.slice(0, 1).toUpperCase()}</div>
+      <div style="flex:999 1 400px;display:flex;flex-direction:column;gap:8px">
+        <p class="eyebrow" style="color:#b9bec4">SECTION 04 / ABOUT</p>
+        <h2 id="about-h" style="margin:0;font-size:28px">{ABOUT.name}</h2>
+        <p style="margin:0;color:#d6dade;max-width:560px">{ABOUT.bio[lang]}</p>
+        <div class="row-wrap" style="gap:8px 20px;margin-top:8px">
+          {ABOUT.links.map((l) => <a href={l.external ? l.href : L(l.href)} style="text-decoration:underline">{l.label}</a>)}
+        </div>
+      </div>
+    </section>
+  </main>
+</Base>
+
+<style>
+  .hero { display: flex; flex-wrap: wrap; gap: 48px; padding: 72px 0 64px; border-bottom: 1px solid var(--rule); }
+  .hero-main { flex: 999 1 520px; min-width: 0; display: flex; flex-direction: column; gap: 24px; }
+  .hero-title { margin: 0; font-size: clamp(44px, 7vw, 96px); line-height: 1.05; font-weight: 700; letter-spacing: -0.01em; }
+  .hero-intro { margin: 0; max-width: 520px; font-size: 18px; color: var(--ink-2); }
+  .now { flex: 1 1 340px; }
+  .now .kv dd { font-size: 15px; }
+  .row-wrap { display: flex; flex-wrap: wrap; gap: 12px; }
+  .row-between { display: flex; justify-content: space-between; align-items: end; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
+  .split { display: flex; flex-wrap: wrap; gap: 24px 48px; padding: 48px 0; border-bottom: 1px solid var(--rule); }
+  .split-side { flex: 1 1 220px; }
+  .split-main { flex: 999 1 560px; min-width: 0; }
+  .notice-list { border-top: 1px solid var(--ink); }
+  .notice { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 24px; padding: 14px 0; border-bottom: 1px solid var(--rule); }
+  .notice time { font-size: 13px; width: 104px; }
+  .notice-text { flex: 1 1 240px; }
+  .block { padding: 48px 0; border-bottom: 1px solid var(--rule); }
+  .block:last-of-type { border-bottom: 0; }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; }
+  .card-head { display: flex; justify-content: space-between; padding: 10px 16px; border-bottom: 1px solid var(--ink); font-size: 12px; }
+  .card-entry { display: flex; justify-content: space-between; align-items: center; min-height: 48px; padding: 0 16px; border-top: 1px solid var(--ink); font-weight: 500; }
+  .table-scroll { overflow-x: auto; border-top: 2px solid var(--ink); }
+  .ptable { min-width: 640px; }
+  .prow { display: grid; grid-template-columns: 80px 110px minmax(0, 1fr) 200px 64px; gap: 16px; align-items: center; padding: 16px 12px; border-bottom: 1px solid var(--rule); }
+  a.prow:hover { background: var(--surface); }
+  .phead { padding: 8px 12px; border-bottom-color: var(--ink); font-size: 11px; color: var(--muted); letter-spacing: 0.08em; }
+  .about { display: flex; flex-wrap: wrap; gap: 32px; padding: 40px; margin: 0 0 72px; background: var(--ink); color: var(--paper); }
+  .about a { color: var(--paper); }
+  .avatar { width: 120px; height: 120px; border: 1px solid var(--paper); display: flex; align-items: center; justify-content: center; font-size: 48px; }
+  span.btn[aria-disabled] { opacity: 0.6; }
+  @media (max-width: 600px) {
+    .hero { padding: 48px 0; }
+    .about { padding: 24px; }
+  }
+</style>

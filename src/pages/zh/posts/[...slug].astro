@@ -1,0 +1,9 @@
+---
+import PostPage from '../../../components/PostPage.astro';
+import { postPaths } from '../../../utils/posts';
+
+export async function getStaticPaths() {
+  return postPaths('zh');
+}
+---
+<PostPage lang="zh" {...(Astro.props as any)} />

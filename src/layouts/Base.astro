@@ -1,37 +1,56 @@
 ---
 import '../styles/global.css';
 import { SITE, NAV } from '../config';
+import { LANGS, LANG_META, UI, localize, stripLang, type Lang } from '../i18n';
 
 interface Props {
+  lang: Lang;
   title?: string;
   description?: string;
+  /** 本页各语言版本的地址；不传时按“同一路径换语言前缀”生成 */
+  alternates?: Partial<Record<Lang, string>>;
 }
-const { title, description = SITE.description } = Astro.props;
-const fullTitle = title ? `${title} · ${SITE.name}` : SITE.name;
+const { lang, title, description = SITE.description[lang] } = Astro.props;
+const ui = UI[lang];
 const path = Astro.url.pathname;
+const base = stripLang(path);
+const alternates: Partial<Record<Lang, string>> =
+  Astro.props.alternates ?? Object.fromEntries(LANGS.map((l) => [l, localize(l, base)]));
+
+const fullTitle = title ? `${title} · ${SITE.name}` : SITE.name;
+const home = localize(lang, '/');
 const isCurrent = (href: string) =>
-  href === '/' ? path === '/' : !href.includes('#') && path.startsWith(href.replace(/\/$/, ''));
+  href === home ? path === home : !href.includes('#') && path.startsWith(href.replace(/\/$/, ''));
+
+const fonts =
+  'family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;700' +
+  (lang === 'zh' ? '&family=Noto+Sans+SC:wght@400;500;700' : '');
 ---
 <!doctype html>
-<html lang="zh-CN">
+<html lang={LANG_META[lang].html}>
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>{fullTitle}</title>
   <meta name="description" content={description} />
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-  <link rel="alternate" type="application/rss+xml" title={SITE.name} href="/rss.xml" />
+  <link rel="alternate" type="application/rss+xml" title={SITE.name} href={localize(lang, '/rss.xml')} />
   <link rel="canonical" href={new URL(path, Astro.site)} />
+  {LANGS.filter((l) => alternates[l]).map((l) => (
+    <link rel="alternate" hreflang={LANG_META[l].html} href={new URL(alternates[l]!, Astro.site)} />
+  ))}
+  {alternates.en && <link rel="alternate" hreflang="x-default" href={new URL(alternates.en, Astro.site)} />}
   <meta property="og:title" content={fullTitle} />
   <meta property="og:description" content={description} />
+  <meta property="og:locale" content={LANG_META[lang].og} />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Noto+Sans+SC:wght@400;500;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet" />
+  <link href={`https://fonts.googleapis.com/css2?${fonts}&display=swap`} rel="stylesheet" />
 </head>
 <body>
   <header class="site-header">
     <div class="wrap">
-      <a href="/" class="brand">
+      <a href={home} class="brand">
         <svg width="36" height="36" viewBox="0 0 36 36" fill="none" aria-hidden="true">
           <rect x="1" y="1" width="34" height="34" stroke="currentColor" stroke-width="2" />
           <circle cx="18" cy="18" r="8" stroke="var(--accent)" stroke-width="2" />
@@ -39,16 +58,31 @@ const isCurrent = (href: string) =>
         </svg>
         <span class="brand-text">
           <span class="brand-name">{SITE.name}</span>
-          <span class="brand-sub">{SITE.subtitle} · SINCE {SITE.since}</span>
+          <span class="brand-sub">{SITE.subtitle[lang]} · {ui.since} {SITE.since}</span>
         </span>
       </a>
-      <nav class="nav" aria-label="主导航">
-        {NAV.map((n) => (
-          <a href={n.href} aria-current={isCurrent(n.href) ? 'page' : undefined}>
-            <span class="no">{n.no}</span>{n.label}<span class="en">{n.en}</span>
-          </a>
-        ))}
-      </nav>
+      <div class="head-right">
+        <nav class="nav" aria-label={ui.navAria}>
+          {NAV.map((n) => {
+            const href = localize(lang, n.href);
+            return (
+              <a href={href} aria-current={isCurrent(href) ? 'page' : undefined}>
+                <span class="no">{n.no}</span>{n.label[lang]}{lang !== 'en' && <span class="en">{n.sub}</span>}
+              </a>
+            );
+          })}
+        </nav>
+        <nav class="lang-switch" aria-label={ui.langAria}>
+          {LANGS.map((l) => (
+            <a
+              href={alternates[l] ?? localize(l, '/')}
+              hreflang={LANG_META[l].html}
+              lang={LANG_META[l].html}
+              aria-current={l === lang ? 'true' : undefined}
+            >{LANG_META[l].label}</a>
+          ))}
+        </nav>
+      </div>
     </div>
   </header>
 
@@ -58,14 +92,14 @@ const isCurrent = (href: string) =>
     <div class="wrap">
       <div style="display:flex;flex-direction:column;gap:6px;max-width:520px">
         <span style="font-weight:700;letter-spacing:0.08em">{SITE.name}</span>
-        <span class="muted" style="font-size:13px">本站内容仅代表作者本人当时的看法。</span>
+        <span class="muted" style="font-size:13px">{ui.disclaimer}</span>
         <span class="mono muted" style="font-size:12px">© {new Date().getFullYear()} {SITE.author} · Built with Astro · Hosted on GitHub Pages</span>
       </div>
-      <nav class="fnav" aria-label="页脚导航">
-        <a href="/archive/">归档 Archive</a>
-        <a href="/#about">关于 About</a>
-        <a href="/rss.xml">RSS</a>
-        <a href="#">↑ 回到顶部</a>
+      <nav class="fnav" aria-label={ui.footerNavAria}>
+        <a href={localize(lang, '/archive/')}>{ui.footArchive}</a>
+        <a href={localize(lang, '/#about')}>{ui.footAbout}</a>
+        <a href={localize(lang, '/rss.xml')}>RSS</a>
+        <a href="#">{ui.backToTop}</a>
       </nav>
     </div>
   </footer>

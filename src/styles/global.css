@@ -50,6 +50,11 @@ img { max-width: 100%; height: auto; display: block; }
 .nav .no { font-family: var(--mono); font-size: 11px; color: var(--accent); }
 .nav .en { font-size: 11px; color: var(--muted); }
 .nav a[aria-current='page'] { text-decoration: underline; text-underline-offset: 6px; }
+.head-right { display: flex; flex-wrap: wrap; align-items: center; gap: 8px 28px; }
+.lang-switch { display: flex; border: 1px solid var(--ink); font-family: var(--mono); font-size: 12px; }
+.lang-switch a { display: flex; align-items: center; min-height: 32px; padding: 0 10px; }
+.lang-switch a + a { border-left: 1px solid var(--ink); }
+.lang-switch a[aria-current='true'] { background: var(--ink); color: var(--paper); }
 
 /* buttons */
 .btn { display: inline-flex; align-items: center; gap: 10px; min-height: 48px; padding: 0 22px; font-weight: 500; border: 1px solid var(--ink); }
@@ -104,4 +109,5 @@ img { max-width: 100%; height: auto; display: block; }
 .prose th { border-bottom-color: var(--ink); font-family: var(--mono); font-size: 12px; color: var(--muted); font-weight: 500; }
 /* 在 Markdown 里写 <div class="note">…</div> 得到提示框 */
 .prose .note { border: 1px solid var(--ink); background: var(--surface); padding: 12px 14px; font-size: 15px; }
-.prose .note::before { content: '提示 / NOTE'; display: block; margin: -12px -14px 10px; padding: 6px 14px; border-bottom: 1px dashed var(--rule); font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; color: var(--accent); }
+.prose .note::before { content: 'NOTE'; display: block; margin: -12px -14px 10px; padding: 6px 14px; border-bottom: 1px dashed var(--rule); font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; color: var(--accent); }
+html[lang='zh-CN'] .prose .note::before { content: '提示 / NOTE'; }

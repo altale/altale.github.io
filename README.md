@@ -10,13 +10,26 @@ npm run dev      # http://localhost:4321
 npm run build    # 输出到 dist/
 ```
 
+## 语言
+
+站点是中英双语，默认英文：
+
+- 英文：`/`、`/archive/`、`/posts/<slug>/`、`/rss.xml`
+- 中文：`/zh/`、`/zh/archive/`、`/zh/posts/<slug>/`、`/zh/rss.xml`
+
+页头右侧有 EN / 中文 切换。界面文字在 `src/i18n.ts`。
+
 ## 改站点文字
 
-站名、首页标题、近况、通知、分类、关于等都在 `src/config.ts`，方括号里的是占位。
+站名、首页标题、近况、通知、分类、关于等都在 `src/config.ts`，每段都有 `en` / `zh` 两个版本，方括号里的是占位。
 
 ## 写文章
 
-在 `src/content/posts/` 下新建 `.md`（文件名就是网址，如 `hello.md` → `/posts/hello/`）：
+英文文章放 `src/content/posts/en/`，中文放 `src/content/posts/zh/`。文件名就是网址：`en/hello.md` → `/posts/hello/`，`zh/hello.md` → `/zh/posts/hello/`。
+
+两个目录里文件名相同，就算同一篇文章的两个语言版本：语言切换会互相跳转，编号也相同。只写一种语言也可以，切换语言时会回到另一语言的首页。
+
+frontmatter 示例：
 
 ```md
 ---
@@ -34,4 +47,4 @@ draft: false          # true 时只在本地 dev 可见
 <div class="note">这样写会渲染成“提示 / NOTE”框。</div>
 ```
 
-文章编号（No.001…）按发布日期自动生成。
+文章编号（No.001…）按首次发布日期自动生成。

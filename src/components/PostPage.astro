@@ -1,0 +1,121 @@
+---
+import { render } from 'astro:content';
+import Base from '../layouts/Base.astro';
+import { SITE } from '../config';
+import { UI, localize, type Lang } from '../i18n';
+import { fmt, categoryOf, postUrl, type Post } from '../utils/posts';
+
+interface Props {
+  lang: Lang;
+  post: Post;
+  newer?: Post;
+  older?: Post;
+  alternates: Partial<Record<Lang, string>>;
+}
+const { lang, post, newer, older, alternates } = Astro.props;
+const ui = UI[lang];
+const L = (p: string) => localize(lang, p);
+const { Content, headings } = await render(post);
+const toc = headings.filter((h) => h.depth === 2);
+const cat = categoryOf(post.data.category);
+const d = post.data;
+const tagUrl = (t: string) => `${L('/archive/')}?tag=${encodeURIComponent(t)}`;
+---
+<Base lang={lang} title={d.title} description={d.description} alternates={alternates}>
+  <main class="wrap" style="padding-top:40px;padding-bottom:80px">
+    <nav class="mono muted crumb" aria-label={ui.breadcrumbAria}>
+      <a href={L('/')}>HOME</a> / <a href={`${L('/archive/')}?category=${d.category}`}>{cat?.name[lang]}</a> / {post.no}
+    </nav>
+
+    <div class="layout">
+      <aside class="side">
+        <div class="box">
+          <div class="box-head"><span>{ui.info}</span><span class="mono" style="font-size:12px">INFO</span></div>
+          <dl class="kv" style="font-size:14px">
+            <dt>NO.</dt><dd class="mono accent">{post.no}</dd>
+            <dt>{ui.published}</dt><dd class="mono"><time datetime={d.date.toISOString()}>{fmt(d.date)}</time></dd>
+            {d.updated && (<><dt>{ui.updated}</dt><dd class="mono"><time datetime={d.updated.toISOString()}>{fmt(d.updated)}</time></dd></>)}
+            <dt>{ui.category}</dt><dd>{cat?.name[lang]}</dd>
+            <dt>{ui.reading}</dt><dd class="mono">{ui.readTime(post.readMin)}</dd>
+          </dl>
+          {d.tags.length > 0 && (
+            <div class="box-foot" style="justify-content:flex-start;gap:8px">
+              {d.tags.map((t) => <a class="tag" href={tagUrl(t)}>#{t}</a>)}
+            </div>
+          )}
+        </div>
+
+        {toc.length > 0 && (
+          <nav class="toc" aria-label={ui.tocAria}>
+            <p class="eyebrow" style="font-size:11px;margin-bottom:8px">{ui.toc}</p>
+            <ol>
+              {toc.map((h, i) => (
+                <li><a href={`#${h.slug}`}><span class="mono muted">{String(i + 1).padStart(2, '0')}</span>{h.text}</a></li>
+              ))}
+            </ol>
+          </nav>
+        )}
+      </aside>
+
+      <article class="main">
+        <p class="eyebrow">SECTION 02 / {cat?.code} · {cat?.label}</p>
+        <h1 class="title">{d.title}</h1>
+        {d.description && <p class="lede">{d.description}</p>}
+        {d.cover && <img class="cover" src={d.cover} alt="" />}
+
+        <div class="prose"><Content /></div>
+
+        <div class="signoff mono muted">
+          <span>{ui.byline(SITE.author, SITE.license)}</span>
+          {d.tags[0] && <a class="accent" style="text-decoration:underline" href={tagUrl(d.tags[0])}>{ui.moreTag(d.tags[0])}</a>}
+        </div>
+
+        <div class="pager">
+          {older
+            ? <a class="box pg" href={postUrl(older)}><span class="mono muted" style="font-size:11px">{ui.prev} · {older.no}</span><span style="font-weight:500">{older.data.title}</span></a>
+            : <span class="pg pg-empty"><span class="mono muted" style="font-size:11px">{ui.prev}</span><span class="muted">{ui.firstPost}</span></span>}
+          {newer
+            ? <a class="box pg" style="text-align:right" href={postUrl(newer)}><span class="mono muted" style="font-size:11px">{newer.no} · {ui.next}</span><span style="font-weight:500">{newer.data.title}</span></a>
+            : <span class="pg pg-empty" style="text-align:right"><span class="mono muted" style="font-size:11px">{ui.next}</span><span class="muted">{ui.latestPost}</span></span>}
+        </div>
+      </article>
+    </div>
+  </main>
+</Base>
+
+<script>
+  // 目录高亮当前章节
+  const links = [...document.querySelectorAll<HTMLAnchorElement>('.toc a')];
+  const map = new Map(links.map((a) => [decodeURIComponent(a.hash.slice(1)), a]));
+  const io = new IntersectionObserver(
+    (entries) => {
+      for (const e of entries) {
+        if (!e.isIntersecting) continue;
+        links.forEach((a) => a.classList.remove('on'));
+        map.get(e.target.id)?.classList.add('on');
+      }
+    },
+    { rootMargin: '0px 0px -70% 0px' },
+  );
+  document.querySelectorAll('.prose h2[id]').forEach((h) => io.observe(h));
+</script>
+
+<style>
+  .crumb { font-size: 12px; margin-bottom: 24px; }
+  .layout { display: flex; flex-wrap: wrap; gap: 48px; align-items: flex-start; }
+  .side { flex: 1 1 260px; display: flex; flex-direction: column; gap: 24px; }
+  .main { flex: 999 1 600px; min-width: 0; max-width: 760px; }
+  .toc { border-top: 2px solid var(--ink); padding-top: 12px; }
+  .toc ol { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 2px; font-size: 14px; }
+  .toc a { display: flex; gap: 10px; padding: 6px 0; }
+  .toc a.on { color: var(--accent); font-weight: 500; }
+  .toc a.on span { color: var(--accent); }
+  @media (min-width: 960px) { .side { position: sticky; top: 24px; } }
+  .title { margin: 8px 0 16px; font-size: clamp(30px, 5vw, 52px); line-height: 1.15; letter-spacing: -0.01em; }
+  .lede { margin: 0 0 32px; font-size: 18px; color: var(--ink-2); }
+  .cover { width: 100%; border: 1px solid var(--ink); margin-bottom: 40px; }
+  .signoff { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px; padding: 16px 0; margin-top: 48px; border-top: 2px solid var(--ink); border-bottom: 1px solid var(--rule); font-size: 12px; }
+  .pager { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-top: 24px; }
+  .pg { display: flex; flex-direction: column; gap: 4px; padding: 16px; }
+  .pg-empty { border: 1px solid var(--rule); }
+</style>
