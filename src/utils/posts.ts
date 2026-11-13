@@ -1,5 +1,4 @@
 import { getCollection, type CollectionEntry } from 'astro:content';
-import { CATEGORIES } from '../config';
 import { LANGS, localize, type Lang } from '../i18n';
 
 export type Post = CollectionEntry<'posts'> & {
@@ -31,7 +30,7 @@ async function allPosts(): Promise<Post[]> {
     .sort((a, b) => a[1] - b[1] || a[0].localeCompare(b[0]))
     .map(([slug]) => slug);
 
-  return items.map((p) => ({ ...p, no: 'No.' + String(order.indexOf(p.slug) + 1).padStart(3, '0') }));
+  return items.map((p) => ({ ...p, no: String(order.indexOf(p.slug) + 1).padStart(3, '0') }));
 }
 
 /** 某个语言的文章，按日期从新到旧 */
@@ -63,7 +62,7 @@ function readMinutes(body: string) {
 }
 
 export const fmt = (d: Date) => d.toISOString().slice(0, 10);
-
-export const categoryOf = (id: string) => CATEGORIES.find((c) => c.id === id);
+export const fmtSlash = (d: Date) => fmt(d).replaceAll('-', '/');
+export const md = (d: Date) => fmt(d).slice(5);
 
 export const postUrl = (p: { lang: Lang; slug: string }) => localize(p.lang, `/posts/${p.slug}/`);

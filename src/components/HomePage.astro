@@ -1,126 +1,99 @@
 ---
 import Base from '../layouts/Base.astro';
-import { SITE, NOW, NOTICES, CATEGORIES, ABOUT } from '../config';
+import { PROFILE, GITHUB } from '../config';
 import { UI, localize, type Lang } from '../i18n';
-import { getPosts, fmt, postUrl } from '../utils/posts';
+import { getPosts, fmt, fmtSlash, md, postUrl } from '../utils/posts';
+import { getPullRequests } from '../utils/github';
 
 interface Props { lang: Lang }
 const { lang } = Astro.props;
 const ui = UI[lang];
-const zh = lang === 'zh';
 const L = (p: string) => localize(lang, p);
 
 const posts = await getPosts(lang);
-const latest = posts.slice(0, 6);
-const countBy = (id: string) => posts.filter((p) => p.data.category === id).length;
-const headline = SITE.headline[lang].split('\n');
+const latest = posts[0];
+const prs = await getPullRequests();
+const MARK = { merged: '☑', open: '☐', closed: '☒' } as const;
+const allPrsUrl = `https://github.com/pulls?q=${encodeURIComponent(`author:${GITHUB.user}`)}`;
 ---
-<Base lang={lang}>
-  <main class="wrap">
-    <!-- hero -->
-    <section class="hero">
-      <div class="hero-main">
-        <p class="eyebrow">SECTION 00 / HELLO</p>
-        <h1 class="hero-title">
-          {headline.map((line, i) => (<>{line}{i < headline.length - 1 && <br />}</>))}<span class="accent">.</span>
-        </h1>
-        <p class="hero-intro">{SITE.intro[lang]}</p>
-        <div class="row-wrap">
-          {latest[0]
-            ? <a class="btn btn-solid" href={postUrl(latest[0])}>{ui.readLatest} <span class="mono">→</span></a>
-            : <span class="btn btn-solid" aria-disabled="true">{ui.noPostYet}</span>}
-          <a class="btn" href={L('/archive/')}>{ui.allPosts}</a>
+<Base lang={lang} sideLabel={ui.profileAria} isHome>
+  <Fragment slot="side">
+    <div class="side-block" style="gap:12px">
+      <p class="side-label" style="margin:0">PROFILE</p>
+      <div class="profile">
+        <div class="avatar">
+          <img src={PROFILE.avatar} alt={ui.avatarAlt} width="120" height="120" loading="lazy" />
+          <span class="avatar-mark" aria-hidden="true"></span>
         </div>
-      </div>
-
-      <aside class="box now" aria-labelledby="now-h">
-        <div class="box-head">
-          <h2 id="now-h">{ui.nowTitle}</h2>
-          <span class="mono" style="font-size:12px">{NOW.updated.slice(0, 7)}</span>
-        </div>
-        <dl class="kv">
-          {NOW.items.map((it) => (<><dt>{it.label[lang]}</dt><dd>{it.value[lang]}</dd></>))}
-        </dl>
-        <div class="box-foot">
-          <span class="mono muted" style="font-size:12px">{ui.updatedOn} {NOW.updated}</span>
-          <a class="btn btn-accent" href={L('/rss.xml')}>{ui.subscribe}</a>
-        </div>
-      </aside>
-    </section>
-
-    <!-- notices -->
-    {NOTICES.length > 0 && (
-      <section class="split" aria-labelledby="notice-h">
-        <div class="split-side">
-          <p class="eyebrow">SECTION 01</p>
-          <h2 id="notice-h" class="sec-title">{ui.notice}{zh && <small>NOTICE</small>}</h2>
-        </div>
-        <div class="split-main notice-list">
-          {NOTICES.map((n) => (
-            <div class="notice">
-              <time class="mono muted" datetime={n.date}>{n.date}</time>
-              <span class="tag">{n.kind[lang]}</span>
-              <span class="notice-text">{n.text[lang]}</span>
-            </div>
+        <p class="bio">{PROFILE.bio[lang]}</p>
+        <dl class="side-dl">
+          {PROFILE.info.map((r) => (
+            <>
+              <dt>{r.key}</dt>
+              <dd class:list={{ mono: r.mono }}>{r.href ? <a href={r.href}>{r.value[lang]}</a> : r.value[lang]}</dd>
+            </>
           ))}
-        </div>
-      </section>
-    )}
-
-    <!-- categories -->
-    <section class="block" aria-labelledby="cat-h">
-      <p class="eyebrow">SECTION 02</p>
-      <h2 id="cat-h" class="sec-title" style="margin-bottom:24px">{ui.categories}{zh && <small>CATEGORIES</small>}</h2>
-      <div class="cards">
-        {CATEGORIES.map((c) => (
-          <article class="box">
-            <div class="card-head mono"><span>SECTION 02 / {c.code}</span><span class="muted">{ui.postCount(countBy(c.id))}</span></div>
-            <div class="stripes" style="height:140px;border-bottom:1px solid var(--rule)" aria-hidden="true">{c.label}</div>
-            <div style="padding:16px;display:flex;flex-direction:column;gap:6px;flex:1">
-              <h3 style="margin:0;font-size:22px">{c.name[lang]}{zh && <span class="muted" style="font-size:13px;font-weight:400"> {c.label}</span>}</h3>
-              <p style="margin:0;font-size:14px;color:var(--ink-2)">{c.desc[lang]}</p>
-            </div>
-            <a class="card-entry" href={`${L('/archive/')}?category=${c.id}`}>ENTRY<span class="mono accent">→</span></a>
-          </article>
-        ))}
+        </dl>
       </div>
+    </div>
+  </Fragment>
+
+  <div class="strip" slot="strip">
+    {latest
+      ? <a class="strip-main" href={postUrl(latest)}>
+          <span>{ui.latest}</span><span class="sep" aria-hidden="true">▶</span>
+          <span class="date">{fmt(latest.data.date)}</span><span class="sep" aria-hidden="true">▶</span>
+          <span class="ellipsis">{ui.quote(latest.data.title)}</span>
+        </a>
+      : <div class="strip-main"><span>{ui.latest}</span><span class="sep" aria-hidden="true">▶</span><span>{ui.firstPostSoon}</span></div>}
+    <a class="strip-btn" href={L('/archive/')}>+ ALL</a>
+  </div>
+
+  <main class="page">
+    <section id="posts" aria-labelledby="posts-h">
+      <p class="sec-label">WRITING</p>
+      <div class="sec-head">
+        <h2 id="posts-h">{ui.postsTitle}</h2>
+        <a class="sec-link" href={L('/archive/')}>{ui.byTag}</a>
+      </div>
+      {posts.length === 0 && <p class="empty">{ui.noPosts}</p>}
+      {posts.slice(0, 10).map((p) => (
+        <a class="row" href={postUrl(p)}>
+          <time class="row-date" style="width:96px" datetime={p.data.date.toISOString()}>{fmt(p.data.date)}</time>
+          <span style="flex:1 1 300px;display:flex;flex-direction:column;gap:4px">
+            <span style="font-size:16px;font-weight:500">{p.data.title}</span>
+            {p.data.description && <span class="muted" style="font-size:13px">{p.data.description}</span>}
+          </span>
+          <span class="row-tags">{p.data.tags.map((t) => '#' + t).join(' ')}</span>
+        </a>
+      ))}
     </section>
 
-    <!-- latest -->
-    <section class="block" aria-labelledby="latest-h" style="padding-bottom:72px">
-      <div class="row-between">
-        <div>
-          <p class="eyebrow">SECTION 03</p>
-          <h2 id="latest-h" class="sec-title">{ui.latest}{zh && <small>LATEST POSTS</small>}</h2>
-        </div>
-        <a href={L('/archive/')} style="font-weight:500;text-decoration:underline">{ui.viewAll}</a>
+    <section id="prs" aria-labelledby="pr-h">
+      <p class="sec-label">GITHUB</p>
+      <div class="sec-head" style="margin-bottom:28px">
+        <h2 id="pr-h">{ui.prTitle}</h2>
+        <a class="sec-link" href={allPrsUrl}>{ui.viewAll}</a>
       </div>
-      <div class="table-scroll">
-        <div class="ptable">
-          <div class="prow phead mono"><span>NO.</span><span>DATE</span><span>TITLE</span><span>TAGS</span><span style="text-align:right">READ</span></div>
-          {latest.length === 0 && <p class="empty">{ui.noPosts}</p>}
-          {latest.map((p) => (
-            <a class="prow" href={postUrl(p)}>
-              <span class="mono accent" style="font-size:13px">{p.no}</span>
-              <time class="mono muted" style="font-size:13px" datetime={p.data.date.toISOString()}>{fmt(p.data.date)}</time>
-              <span style="font-size:17px;font-weight:500">{p.data.title}</span>
-              <span class="muted" style="font-size:13px">{p.data.tags.map((t) => '#' + t).join(' ')}</span>
-              <span class="mono muted" style="font-size:13px;text-align:right">{p.readMin} min</span>
+      <div class="frame">
+        <div class="frame-inner">
+          <div class="frame-bar" style="padding-bottom:12px;border-bottom:1px solid var(--ink)">
+            <span>PULL REQUESTS</span><span>AUTO / 6H / {prs?.length ?? 0} OF ■</span>
+          </div>
+          {!prs?.length && <p class="empty">{ui.prEmpty}</p>}
+          {prs?.map((pr) => (
+            <a class="pr" href={pr.url}>
+              <span class="mono" title={ui.prState[pr.state]} style="font-size:13px;flex:0 0 auto">
+                <span aria-hidden="true">{MARK[pr.state]}</span><span class="sr-only">{ui.prState[pr.state]}</span>
+              </span>
+              <span class="mono muted pr-repo">{pr.repo}</span>
+              <span class="pr-title">{pr.title}</span>
+              <time class="mono muted" style="font-size:12px;flex:0 0 auto" datetime={pr.date.toISOString()}>{md(pr.date)}</time>
             </a>
           ))}
-        </div>
-      </div>
-    </section>
-
-    <!-- about -->
-    <section id="about" class="about" aria-labelledby="about-h">
-      <div class="avatar mono" aria-hidden="true">{ABOUT.name.slice(0, 1).toUpperCase()}</div>
-      <div style="flex:999 1 400px;display:flex;flex-direction:column;gap:8px">
-        <p class="eyebrow" style="color:#b9bec4">SECTION 04 / ABOUT</p>
-        <h2 id="about-h" style="margin:0;font-size:28px">{ABOUT.name}</h2>
-        <p style="margin:0;color:#d6dade;max-width:560px">{ABOUT.bio[lang]}</p>
-        <div class="row-wrap" style="gap:8px 20px;margin-top:8px">
-          {ABOUT.links.map((l) => <a href={l.external ? l.href : L(l.href)} style="text-decoration:underline">{l.label}</a>)}
+          <div class="frame-bar" style="margin-top:28px;padding-top:12px;border-top:1px solid var(--ink)">
+            <span>GITHUB.COM/{GITHUB.user.toUpperCase()}</span><span>{fmtSlash(new Date())}</span>
+          </div>
         </div>
       </div>
     </section>
@@ -128,37 +101,15 @@ const headline = SITE.headline[lang].split('\n');
 </Base>
 
 <style>
-  .hero { display: flex; flex-wrap: wrap; gap: 48px; padding: 72px 0 64px; border-bottom: 1px solid var(--rule); }
-  .hero-main { flex: 999 1 520px; min-width: 0; display: flex; flex-direction: column; gap: 24px; }
-  .hero-title { margin: 0; font-size: clamp(44px, 7vw, 96px); line-height: 1.05; font-weight: 700; letter-spacing: -0.01em; }
-  .hero-intro { margin: 0; max-width: 520px; font-size: 18px; color: var(--ink-2); }
-  .now { flex: 1 1 340px; }
-  .now .kv dd { font-size: 15px; }
-  .row-wrap { display: flex; flex-wrap: wrap; gap: 12px; }
-  .row-between { display: flex; justify-content: space-between; align-items: end; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
-  .split { display: flex; flex-wrap: wrap; gap: 24px 48px; padding: 48px 0; border-bottom: 1px solid var(--rule); }
-  .split-side { flex: 1 1 220px; }
-  .split-main { flex: 999 1 560px; min-width: 0; }
-  .notice-list { border-top: 1px solid var(--ink); }
-  .notice { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 24px; padding: 14px 0; border-bottom: 1px solid var(--rule); }
-  .notice time { font-size: 13px; width: 104px; }
-  .notice-text { flex: 1 1 240px; }
-  .block { padding: 48px 0; border-bottom: 1px solid var(--rule); }
-  .block:last-of-type { border-bottom: 0; }
-  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; }
-  .card-head { display: flex; justify-content: space-between; padding: 10px 16px; border-bottom: 1px solid var(--ink); font-size: 12px; }
-  .card-entry { display: flex; justify-content: space-between; align-items: center; min-height: 48px; padding: 0 16px; border-top: 1px solid var(--ink); font-weight: 500; }
-  .table-scroll { overflow-x: auto; border-top: 2px solid var(--ink); }
-  .ptable { min-width: 640px; }
-  .prow { display: grid; grid-template-columns: 80px 110px minmax(0, 1fr) 200px 64px; gap: 16px; align-items: center; padding: 16px 12px; border-bottom: 1px solid var(--rule); }
-  a.prow:hover { background: var(--surface); }
-  .phead { padding: 8px 12px; border-bottom-color: var(--ink); font-size: 11px; color: var(--muted); letter-spacing: 0.08em; }
-  .about { display: flex; flex-wrap: wrap; gap: 32px; padding: 40px; margin: 0 0 72px; background: var(--ink); color: var(--paper); }
-  .about a { color: var(--paper); }
-  .avatar { width: 120px; height: 120px; border: 1px solid var(--paper); display: flex; align-items: center; justify-content: center; font-size: 48px; }
-  span.btn[aria-disabled] { opacity: 0.6; }
-  @media (max-width: 600px) {
-    .hero { padding: 48px 0; }
-    .about { padding: 24px; }
-  }
+  .profile { display: flex; flex-direction: column; gap: 20px; }
+  .avatar { position: relative; width: 120px; height: 120px; }
+  .avatar img { width: 120px; height: 120px; object-fit: cover; border: 1px solid var(--side-text); background: #1a1a1a; }
+  .avatar-mark { position: absolute; right: -5px; bottom: -5px; width: 10px; height: 10px; background: var(--accent); }
+  .bio { margin: 0; font-size: 13px; line-height: 1.9; color: var(--side-dim); }
+  .side-dl { margin-top: 4px; }
+  .pr { display: flex; align-items: baseline; gap: 18px; padding: 12px 4px; border-bottom: 1px dashed #d2d2cc; white-space: nowrap; overflow: hidden; }
+  .pr:hover { background: var(--hover); opacity: 1; }
+  .pr-repo { font-size: 12px; flex: 0 0 170px; overflow: hidden; text-overflow: ellipsis; }
+  .pr-title { font-size: 14px; flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  @media (max-width: 600px) { .pr-repo { flex-basis: 96px; } .pr { gap: 12px; } }
 </style>

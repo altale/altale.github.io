@@ -7,24 +7,25 @@ interface Props {
   lang: Lang;
   title?: string;
   description?: string;
+  /** 侧栏的 aria-label */
+  sideLabel?: string;
+  /** 首页把站名作为 h1 */
+  isHome?: boolean;
   /** 本页各语言版本的地址；不传时按“同一路径换语言前缀”生成 */
   alternates?: Partial<Record<Lang, string>>;
 }
-const { lang, title, description = SITE.description[lang] } = Astro.props;
+const { lang, title, description = SITE.description[lang], sideLabel, isHome = false } = Astro.props;
+const BrandTag = isHome ? 'h1' : 'span';
 const ui = UI[lang];
 const path = Astro.url.pathname;
-const base = stripLang(path);
 const alternates: Partial<Record<Lang, string>> =
-  Astro.props.alternates ?? Object.fromEntries(LANGS.map((l) => [l, localize(l, base)]));
+  Astro.props.alternates ?? Object.fromEntries(LANGS.map((l) => [l, localize(l, stripLang(path))]));
 
 const fullTitle = title ? `${title} · ${SITE.name}` : SITE.name;
 const home = localize(lang, '/');
-const isCurrent = (href: string) =>
-  href === home ? path === home : !href.includes('#') && path.startsWith(href.replace(/\/$/, ''));
-
+const nav = NAV.map((n) => ({ ...n, href: localize(lang, n.href) }));
 const fonts =
-  'family=JetBrains+Mono:wght@400;500&family=Space+Grotesk:wght@400;500;700' +
-  (lang === 'zh' ? '&family=Noto+Sans+SC:wght@400;500;700' : '');
+  'family=Grenze+Gotisch:wght@700&family=JetBrains+Mono:wght@400;500&family=Noto+Serif+SC:wght@400;500;600';
 ---
 <!doctype html>
 <html lang={LANG_META[lang].html}>
@@ -48,60 +49,54 @@ const fonts =
   <link href={`https://fonts.googleapis.com/css2?${fonts}&display=swap`} rel="stylesheet" />
 </head>
 <body>
-  <header class="site-header">
-    <div class="wrap">
-      <a href={home} class="brand">
-        <svg width="36" height="36" viewBox="0 0 36 36" fill="none" aria-hidden="true">
-          <rect x="1" y="1" width="34" height="34" stroke="currentColor" stroke-width="2" />
-          <circle cx="18" cy="18" r="8" stroke="var(--accent)" stroke-width="2" />
-          <path d="M18 4v6M18 26v6M4 18h6M26 18h6" stroke="currentColor" stroke-width="2" />
-        </svg>
-        <span class="brand-text">
-          <span class="brand-name">{SITE.name}</span>
-          <span class="brand-sub">{SITE.subtitle[lang]} · {ui.since} {SITE.since}</span>
-        </span>
-      </a>
-      <div class="head-right">
-        <nav class="nav" aria-label={ui.navAria}>
-          {NAV.map((n) => {
-            const href = localize(lang, n.href);
-            return (
-              <a href={href} aria-current={isCurrent(href) ? 'page' : undefined}>
-                <span class="no">{n.no}</span>{n.label[lang]}{lang !== 'en' && <span class="en">{n.sub}</span>}
-              </a>
-            );
-          })}
-        </nav>
+  <div class="shell">
+    <aside class="side" aria-label={sideLabel}>
+      <slot name="side" />
+
+      <nav class="side-block" aria-label={ui.sideNavAria}>
+        <p class="side-label">MENU</p>
+        {nav.map((n) => (
+          <a class="menu-item" href={n.href}>
+            <span class="tick" aria-hidden="true"></span>
+            <span class="menu-no">{n.no}</span>
+            <span class="menu-name">{n.label[lang]}</span>
+            <span class="menu-sub">{n.sub}</span>
+          </a>
+        ))}
+      </nav>
+
+      <div class="side-foot">
         <nav class="lang-switch" aria-label={ui.langAria}>
           {LANGS.map((l) => (
             <a
               href={alternates[l] ?? localize(l, '/')}
               hreflang={LANG_META[l].html}
               lang={LANG_META[l].html}
-              aria-current={l === lang ? 'true' : undefined}
+              aria-current={l === lang ? 'page' : undefined}
             >{LANG_META[l].label}</a>
           ))}
         </nav>
+        <span class="copyright">© {new Date().getFullYear()} {SITE.author} · {ui.builtWith}</span>
       </div>
-    </div>
-  </header>
+    </aside>
 
-  <slot />
+    <div class="content">
+      <header class="masthead">
+        <a href={home} class="brand">
+          <BrandTag class="brand-name">{SITE.name}</BrandTag>
+          <span class="brand-sub">{SITE.identity[lang]}</span>
+        </a>
+        <nav class="topnav" aria-label={ui.navAria}>
+          {nav.map((n, i) => (
+            <a href={n.href} class:list={{ on: i === 0 }}>{n.label[lang]}</a>
+          ))}
+        </nav>
+      </header>
 
-  <footer class="site-footer">
-    <div class="wrap">
-      <div style="display:flex;flex-direction:column;gap:6px;max-width:520px">
-        <span style="font-weight:700;letter-spacing:0.08em">{SITE.name}</span>
-        <span class="muted" style="font-size:13px">{ui.disclaimer}</span>
-        <span class="mono muted" style="font-size:12px">© {new Date().getFullYear()} {SITE.author} · Built with Astro · Hosted on GitHub Pages</span>
-      </div>
-      <nav class="fnav" aria-label={ui.footerNavAria}>
-        <a href={localize(lang, '/archive/')}>{ui.footArchive}</a>
-        <a href={localize(lang, '/#about')}>{ui.footAbout}</a>
-        <a href={localize(lang, '/rss.xml')}>RSS</a>
-        <a href="#">{ui.backToTop}</a>
-      </nav>
+      <slot name="strip" />
+
+      <slot />
     </div>
-  </footer>
+  </div>
 </body>
 </html>

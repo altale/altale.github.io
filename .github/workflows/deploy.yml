@@ -4,6 +4,9 @@ on:
   push:
     branches: [master]
   workflow_dispatch:
+  # 每 6 小时重新构建一次，同步首页的 GitHub PR 列表
+  schedule:
+    - cron: '17 */6 * * *'
 
 permissions:
   contents: read
@@ -17,6 +20,9 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      # 构建时请求 GitHub API 用，提高限额
+      GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
     steps:
       - uses: actions/checkout@v5
       - uses: withastro/action@v5

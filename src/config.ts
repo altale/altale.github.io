@@ -2,65 +2,37 @@
 
 export const SITE = {
   name: 'ALTALE',
-  since: 2026,
   author: 'altale',
   license: 'CC BY-NC 4.0',
-  subtitle: { en: '[One-line subtitle]', zh: '[一句话副标题]' },
-  // 首页大标题，用 \n 换行
-  headline: { en: 'Writing code,\nand writing life', zh: '写代码，\n也写生活' },
-  intro: {
-    en: '[A sentence or two about this blog: what you write about and who it is for.]',
-    zh: '[一两句介绍这个博客：主要写什么、写给谁看。]',
-  },
+  // 页眉站名下方的一句身份小字
+  identity: { en: '[ONE-LINE IDENTITY, E.G. DEVELOPER]', zh: '[一句身份，如 DEVELOPER]' },
   description: { en: '[Site description for SEO and RSS]', zh: '[站点描述，用于 SEO 和 RSS]' },
 };
 
-export const NAV = [
-  { no: '01', href: '/', label: { en: 'Home', zh: '首页' }, sub: 'HOME' },
-  { no: '02', href: '/archive/', label: { en: 'Archive', zh: '归档' }, sub: 'ARCHIVE' },
-  { no: '03', href: '/archive/#tags', label: { en: 'Tags', zh: '标签' }, sub: 'TAGS' },
-  { no: '04', href: '/#about', label: { en: 'About', zh: '关于' }, sub: 'ABOUT' },
-];
-
-// 首页右上 Now / 近况 卡片
-export const NOW = {
-  updated: '2026-11-13',
-  items: [
-    { label: { en: 'Building', zh: '在做' }, value: { en: '[What you are working on]', zh: '[正在做的项目]' } },
-    { label: { en: 'Reading', zh: '在读' }, value: { en: '[What you are reading]', zh: '[正在读的书]' } },
-    { label: { en: 'Learning', zh: '在学' }, value: { en: '[What you are learning]', zh: '[最近在学的东西]' } },
-  ],
-};
-
-// 首页 Notice / 通知 表，最新的放最前
-export const NOTICES = [
-  {
-    date: '2026-11-13',
-    kind: { en: 'Update', zh: '更新' },
-    text: { en: 'The site is now available in English and Chinese.', zh: '站点支持中英双语，默认显示英文。' },
-  },
-  {
-    date: '2026-11-13',
-    kind: { en: 'Redesign', zh: '改版' },
-    text: { en: 'Rebuilt the site with Astro; the old homepage is retired.', zh: '站点用 Astro 重建，旧版主页下线。' },
-  },
-];
-
-// 分类：id 写进文章 frontmatter 的 category 字段
-export const CATEGORIES = [
-  { id: 'tech', code: 'A', label: 'NOTES', name: { en: 'Tech notes', zh: '技术笔记' }, desc: { en: '[What this category covers]', zh: '[这个分类写什么]' } },
-  { id: 'life', code: 'B', label: 'JOURNAL', name: { en: 'Journal', zh: '日常观察' }, desc: { en: '[What this category covers]', zh: '[这个分类写什么]' } },
-  { id: 'works', code: 'C', label: 'PROJECTS', name: { en: 'Projects', zh: '制作物' }, desc: { en: '[What this category covers]', zh: '[这个分类写什么]' } },
-] as const;
-
-export const ABOUT = {
-  name: 'altale',
+// 首页侧栏 PROFILE
+export const PROFILE = {
+  avatar: 'https://github.com/altale.png',
   bio: {
-    en: '[A sentence or two about yourself: what you do and what you care about.]',
-    zh: '[一两句自我介绍：做什么、在意什么。]',
+    en: '[Two or three sentences about yourself: what you are working on, what you care about, and what you will write about here.]',
+    zh: '[两三句自我介绍：现在在做什么、关心什么、这里会写些什么。]',
   },
-  links: [
-    { label: 'GitHub', href: 'https://github.com/altale', external: true },
-    { label: 'RSS', href: '/rss.xml', external: false },
+  // 信息表：mono 表示值用等宽字体；href 可选
+  info: [
+    { key: 'GITHUB', value: { en: '@altale', zh: '@altale' }, href: 'https://github.com/altale', mono: true },
+    { key: 'MAIL', value: { en: '[Email]', zh: '[邮箱]' }, mono: true },
+    { key: 'BASED', value: { en: '[Location]', zh: '[所在地]' } },
   ],
 };
+
+// 首页“最近的 PR”从这个 GitHub 用户拉取（构建时）
+export const GITHUB = {
+  user: 'altale',
+  prCount: 5,
+};
+
+// 侧栏 MENU 与页眉导航共用；href 为站内路径时会自动加语言前缀
+export const NAV = [
+  { no: '01', href: '/#posts', label: { en: 'Writing', zh: '文章' }, sub: 'WRITING' },
+  { no: '02', href: '/#prs', label: { en: 'PRs', zh: 'PR' }, sub: 'GITHUB' },
+  { no: '03', href: '/rss.xml', label: { en: 'Subscribe', zh: '订阅' }, sub: 'RSS' },
+];

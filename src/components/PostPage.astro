@@ -3,7 +3,7 @@ import { render } from 'astro:content';
 import Base from '../layouts/Base.astro';
 import { SITE } from '../config';
 import { UI, localize, type Lang } from '../i18n';
-import { fmt, categoryOf, postUrl, type Post } from '../utils/posts';
+import { fmt, fmtSlash, postUrl, type Post } from '../utils/posts';
 
 interface Props {
   lang: Lang;
@@ -17,105 +17,132 @@ const ui = UI[lang];
 const L = (p: string) => localize(lang, p);
 const { Content, headings } = await render(post);
 const toc = headings.filter((h) => h.depth === 2);
-const cat = categoryOf(post.data.category);
 const d = post.data;
 const tagUrl = (t: string) => `${L('/archive/')}?tag=${encodeURIComponent(t)}`;
 ---
-<Base lang={lang} title={d.title} description={d.description} alternates={alternates}>
-  <main class="wrap" style="padding-top:40px;padding-bottom:80px">
-    <nav class="mono muted crumb" aria-label={ui.breadcrumbAria}>
-      <a href={L('/')}>HOME</a> / <a href={`${L('/archive/')}?category=${d.category}`}>{cat?.name[lang]}</a> / {post.no}
-    </nav>
-
-    <div class="layout">
-      <aside class="side">
-        <div class="box">
-          <div class="box-head"><span>{ui.info}</span><span class="mono" style="font-size:12px">INFO</span></div>
-          <dl class="kv" style="font-size:14px">
-            <dt>NO.</dt><dd class="mono accent">{post.no}</dd>
-            <dt>{ui.published}</dt><dd class="mono"><time datetime={d.date.toISOString()}>{fmt(d.date)}</time></dd>
-            {d.updated && (<><dt>{ui.updated}</dt><dd class="mono"><time datetime={d.updated.toISOString()}>{fmt(d.updated)}</time></dd></>)}
-            <dt>{ui.category}</dt><dd>{cat?.name[lang]}</dd>
-            <dt>{ui.reading}</dt><dd class="mono">{ui.readTime(post.readMin)}</dd>
-          </dl>
-          {d.tags.length > 0 && (
-            <div class="box-foot" style="justify-content:flex-start;gap:8px">
-              {d.tags.map((t) => <a class="tag" href={tagUrl(t)}>#{t}</a>)}
-            </div>
-          )}
-        </div>
-
-        {toc.length > 0 && (
-          <nav class="toc" aria-label={ui.tocAria}>
-            <p class="eyebrow" style="font-size:11px;margin-bottom:8px">{ui.toc}</p>
-            <ol>
-              {toc.map((h, i) => (
-                <li><a href={`#${h.slug}`}><span class="mono muted">{String(i + 1).padStart(2, '0')}</span>{h.text}</a></li>
-              ))}
-            </ol>
-          </nav>
+<Base lang={lang} title={d.title} description={d.description} alternates={alternates} sideLabel={ui.postSideAria}>
+  <Fragment slot="side">
+    <div class="side-block" style="gap:12px">
+      <p class="side-label" style="margin:0">INFO</p>
+      <dl class="side-dl">
+        <dt>NO.</dt><dd class="mono">{post.no}</dd>
+        <dt>DATE</dt><dd class="mono"><time datetime={d.date.toISOString()}>{fmt(d.date)}</time></dd>
+        {d.updated && (<><dt>UPDATED</dt><dd class="mono"><time datetime={d.updated.toISOString()}>{fmt(d.updated)}</time></dd></>)}
+        <dt>READ</dt><dd>{ui.readTime(post.readMin)}</dd>
+        {d.tags.length > 0 && (
+          <><dt>TAGS</dt><dd class="mono tags">{d.tags.map((t) => <a href={tagUrl(t)}>#{t}</a>)}</dd></>
         )}
-      </aside>
-
-      <article class="main">
-        <p class="eyebrow">SECTION 02 / {cat?.code} · {cat?.label}</p>
-        <h1 class="title">{d.title}</h1>
-        {d.description && <p class="lede">{d.description}</p>}
-        {d.cover && <img class="cover" src={d.cover} alt="" />}
-
-        <div class="prose"><Content /></div>
-
-        <div class="signoff mono muted">
-          <span>{ui.byline(SITE.author, SITE.license)}</span>
-          {d.tags[0] && <a class="accent" style="text-decoration:underline" href={tagUrl(d.tags[0])}>{ui.moreTag(d.tags[0])}</a>}
-        </div>
-
-        <div class="pager">
-          {older
-            ? <a class="box pg" href={postUrl(older)}><span class="mono muted" style="font-size:11px">{ui.prev} · {older.no}</span><span style="font-weight:500">{older.data.title}</span></a>
-            : <span class="pg pg-empty"><span class="mono muted" style="font-size:11px">{ui.prev}</span><span class="muted">{ui.firstPost}</span></span>}
-          {newer
-            ? <a class="box pg" style="text-align:right" href={postUrl(newer)}><span class="mono muted" style="font-size:11px">{newer.no} · {ui.next}</span><span style="font-weight:500">{newer.data.title}</span></a>
-            : <span class="pg pg-empty" style="text-align:right"><span class="mono muted" style="font-size:11px">{ui.next}</span><span class="muted">{ui.latestPost}</span></span>}
-        </div>
-      </article>
+      </dl>
     </div>
+
+    {toc.length > 0 && (
+      <nav class="side-block toc" aria-label={ui.tocAria}>
+        <p class="side-label">INDEX</p>
+        {toc.map((h, i) => (
+          <a class="menu-item short" href={`#${h.slug}`}>
+            <span class="tick" aria-hidden="true"></span>
+            <span class="menu-no">{String(i + 1).padStart(2, '0')}</span>
+            <span class="menu-name">{h.text}</span>
+          </a>
+        ))}
+      </nav>
+    )}
+  </Fragment>
+
+  <div class="strip" slot="strip">
+    <nav class="strip-main" aria-label={ui.breadcrumbAria}>
+      <a href={L('/#posts')}>{ui.posts}</a><span class="sep" aria-hidden="true">▶</span>
+      <span class="date">{fmt(d.date)}</span><span class="sep" aria-hidden="true">▶</span>
+      <span class="ellipsis">{ui.quote(d.title)}</span>
+    </nav>
+    <a class="strip-btn" href={L('/#posts')}>{ui.back}</a>
+  </div>
+
+  <main class="page">
+    <article style="max-width:720px">
+      <p class="sec-label">WRITING / NO.{post.no}</p>
+      <h1 class="title">{d.title}</h1>
+      {d.description ? <p class="lede">{d.description}</p> : <div class="lede" aria-hidden="true"></div>}
+      {d.cover && (
+        <figure class="cover">
+          <img src={d.cover} alt={d.coverCaption ?? ''} />
+          {d.coverCaption && <figcaption>FIG.01 — {d.coverCaption}</figcaption>}
+        </figure>
+      )}
+
+      <div class="prose"><Content /></div>
+
+      <div class="signed">
+        <span>SIGNED / {SITE.name}</span><span>{SITE.license} · {fmtSlash(d.date)}</span>
+      </div>
+
+      <div class="pager">
+        {older
+          ? <a class="pg" href={postUrl(older)}><span class="pg-label">{ui.prev} · {older.no}</span><span>{older.data.title}</span></a>
+          : <span class="pg"><span class="pg-label">{ui.prev}</span><span class="muted">{ui.firstPost}</span></span>}
+        {newer
+          ? <a class="pg" href={postUrl(newer)}><span class="pg-label">{newer.no} · {ui.next}</span><span>{newer.data.title}</span></a>
+          : <span class="pg"><span class="pg-label">{ui.next}</span><span class="muted">{ui.latestPost}</span></span>}
+      </div>
+    </article>
   </main>
 </Base>
 
-<script>
+<script is:inline define:vars={{ copyLabel: ui.copy, copiedLabel: ui.copied }}>
+  // 代码块：加上语言名和复制按钮
+  for (const pre of document.querySelectorAll('.prose pre')) {
+    const wrap = document.createElement('div');
+    wrap.className = 'code';
+    const bar = document.createElement('div');
+    bar.className = 'code-bar';
+    const lang = document.createElement('span');
+    const l = pre.dataset.language;
+    lang.textContent = !l || l === 'plaintext' ? 'TEXT' : l;
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.textContent = copyLabel;
+    btn.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(pre.innerText);
+        btn.textContent = copiedLabel;
+        setTimeout(() => (btn.textContent = copyLabel), 1500);
+      } catch {}
+    });
+    bar.append(lang, btn);
+    pre.replaceWith(wrap);
+    wrap.append(bar, pre);
+  }
+
   // 目录高亮当前章节
-  const links = [...document.querySelectorAll<HTMLAnchorElement>('.toc a')];
-  const map = new Map(links.map((a) => [decodeURIComponent(a.hash.slice(1)), a]));
-  const io = new IntersectionObserver(
-    (entries) => {
-      for (const e of entries) {
-        if (!e.isIntersecting) continue;
-        links.forEach((a) => a.classList.remove('on'));
-        map.get(e.target.id)?.classList.add('on');
-      }
-    },
-    { rootMargin: '0px 0px -70% 0px' },
-  );
-  document.querySelectorAll('.prose h2[id]').forEach((h) => io.observe(h));
+  const links = [...document.querySelectorAll('.toc a')];
+  if (links.length) {
+    const map = new Map(links.map((a) => [decodeURIComponent(a.hash.slice(1)), a]));
+    const set = (a) => links.forEach((x) => x.classList.toggle('on', x === a));
+    set(links[0]);
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) if (e.isIntersecting) set(map.get(e.target.id));
+      },
+      { rootMargin: '0px 0px -70% 0px' },
+    );
+    document.querySelectorAll('.prose h2[id]').forEach((h) => io.observe(h));
+  }
 </script>
 
 <style>
-  .crumb { font-size: 12px; margin-bottom: 24px; }
-  .layout { display: flex; flex-wrap: wrap; gap: 48px; align-items: flex-start; }
-  .side { flex: 1 1 260px; display: flex; flex-direction: column; gap: 24px; }
-  .main { flex: 999 1 600px; min-width: 0; max-width: 760px; }
-  .toc { border-top: 2px solid var(--ink); padding-top: 12px; }
-  .toc ol { margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 2px; font-size: 14px; }
-  .toc a { display: flex; gap: 10px; padding: 6px 0; }
-  .toc a.on { color: var(--accent); font-weight: 500; }
-  .toc a.on span { color: var(--accent); }
-  @media (min-width: 960px) { .side { position: sticky; top: 24px; } }
-  .title { margin: 8px 0 16px; font-size: clamp(30px, 5vw, 52px); line-height: 1.15; letter-spacing: -0.01em; }
-  .lede { margin: 0 0 32px; font-size: 18px; color: var(--ink-2); }
-  .cover { width: 100%; border: 1px solid var(--ink); margin-bottom: 40px; }
-  .signoff { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 16px; padding: 16px 0; margin-top: 48px; border-top: 2px solid var(--ink); border-bottom: 1px solid var(--rule); font-size: 12px; }
-  .pager { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; margin-top: 24px; }
-  .pg { display: flex; flex-direction: column; gap: 4px; padding: 16px; }
-  .pg-empty { border: 1px solid var(--rule); }
+  .tags { display: flex; flex-wrap: wrap; gap: 4px 12px; }
+  .toc .tick { background: var(--side-rule); }
+  .toc .menu-name { color: var(--side-dim); }
+  .toc a:global(.on) .tick { background: var(--accent); }
+  .toc a:global(.on) .menu-name { color: var(--side-text); }
+  .title { margin: 8px 0 16px; font-size: 30px; line-height: 1.4; font-weight: 500; }
+  .lede { margin: 0 0 32px; padding-bottom: 28px; border-bottom: 1px solid var(--ink); font-size: 15px; line-height: 1.9; color: var(--ink-2); }
+  .cover { margin: 0 0 48px; }
+  .cover img { width: 100%; border: 1px solid var(--ink); }
+  .cover figcaption { margin-top: 8px; font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; color: var(--muted); }
+  .signed { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px 16px; margin-top: 56px; padding-top: 12px; border-top: 1px solid var(--ink); font-family: var(--mono); font-size: 12px; letter-spacing: 0.1em; color: var(--muted); }
+  .pager { display: flex; flex-wrap: wrap; margin-top: 40px; border: 1px solid var(--ink); overflow: hidden; }
+  .pg { flex: 1 1 240px; display: flex; flex-direction: column; gap: 4px; padding: 18px 20px; margin: 0 -1px -1px 0; border-right: 1px solid var(--ink); border-bottom: 1px solid var(--ink); font-size: 15px; background: var(--white); }
+  .pg + .pg { background: var(--warm); text-align: right; }
+  .pg-label { font-family: var(--mono); font-size: 11px; letter-spacing: 0.12em; color: var(--muted); }
 </style>
